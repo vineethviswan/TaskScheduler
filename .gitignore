@@ -1,21 +1,19 @@
 # Prerequisites
 *.d
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
+# Build artifacts
 *.obj
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.lib
+*.exp
+*.log
 
 # Precompiled Headers
 *.gch
 *.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
 
 # Compiled Dynamic libraries
 *.so
@@ -37,5 +35,42 @@
 *.out
 *.app
 
-# debug information files
-*.dwo
+# Visual Studio files
+*.sdf
+*.opensdf
+*.suo
+*.ncb
+*.user
+*.aps
+*.pch
+*.idb
+*.ipdb
+*.iobj
+*.tlog
+*.VC.db
+
+# IDE-specific directories
+.vs/
+bin/
+obj/
+Debug/
+Release/
+.idea/
+.vscode/
+
+# Cache and temporary files
+*.cache
+*.tmp
+
+# Exclude Git metadata and system files
+.git/
+Thumbs.db
+desktop.ini
+
+# Ignore build folders
+/build/
+/cmake-build-*/
+
+# OS-specific
+.DS_Store
+Thumbs.db
