@@ -3,5 +3,5 @@
 
 int main()
 {
-    std::cout << "Testing Task Scheduler" << std::endl;
+    std::cout << "Task Scheduler\n";
 }

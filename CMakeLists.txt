@@ -13,5 +13,16 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
 # Add executable
-add_executable(TaskScheduler ${SOURCES}
-        src/main.cpp)
+add_executable(TaskScheduler ${SOURCES})
+
+# Modern include directories
+target_include_directories(TaskScheduler PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+# Compiler specific flags
+if(MSVC)
+    message("Using MSVC compiler")
+    target_compile_options(TaskScheduler PRIVATE /W4 /WX)
+elseif(MINGW)
+    message("Using MinGW compiler")
+    target_compile_options(TaskScheduler PRIVATE -Wall -Wextra -Werror)
+endif()
