@@ -8,4 +8,5 @@ int main()
 
     TaskScheduler tsh;
     tsh.AddTask([](){ std::cout << "Task 1\n";}, std::chrono::milliseconds(1000));
+    tsh.start();
 }
