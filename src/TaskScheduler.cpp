@@ -3,7 +3,6 @@
 //
 
 #include "TaskScheduler.h"
-#include <iostream>
 
 size_t TaskScheduler::GetTaskCount ()
 {
@@ -107,7 +106,6 @@ void TaskScheduler::start ()
 
 void TaskScheduler::stop ()
 {
-
     if (!running.load ())
     {
         return; // Not running

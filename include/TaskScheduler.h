@@ -14,6 +14,7 @@
 #include <optional>
 #include <vector>
 #include <mutex>
+#include <iostream>
 
 using Action = std::function<void ()>;
 using TaskID = std::size_t;
@@ -65,7 +66,7 @@ public:
 
     // Non-copyable and non-movable
     TaskScheduler (const TaskScheduler &) = delete;
-    TaskScheduler (const TaskScheduler &&) = delete;
+    TaskScheduler (TaskScheduler &&) = delete;
     TaskScheduler &operator= (const TaskScheduler &) = delete;
 
     // Add delayed task (executes once after delay)

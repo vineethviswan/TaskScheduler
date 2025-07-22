@@ -1,5 +1,5 @@
 
-cmake_minimum_required(VERSION 3.30)
+cmake_minimum_required(VERSION 3.15)
 project(TaskScheduler VERSION 1.0.0 LANGUAGES CXX)
 
 # Set C++ standard
