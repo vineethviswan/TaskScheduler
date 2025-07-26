@@ -11,8 +11,8 @@ size_t TaskScheduler::GetTaskCount ()
 }
 
 void TaskScheduler::WorkerLoop ()
-{   
-    while (running.load ())
+{
+    while (IsRunning ())
     {
         std::unique_lock<std::mutex> lock (queue_mutex);
         if (task_queue.empty ())
@@ -36,7 +36,7 @@ void TaskScheduler::WorkerLoop ()
         if (task->is_recurring)
         {
             // calculate next execution time
-            task->next_execution += task->interval.value ();            
+            task->next_execution += task->interval.value ();
             task_queue.push (task);
         }
         ExecuteTask (task);
@@ -84,7 +84,7 @@ TaskID TaskScheduler::AddTask (std::function<void ()> action_, Duration delay, D
     return taskID;
 }
 
-void TaskScheduler::start ()
+void TaskScheduler::Start ()
 {
     if (running.load ())
     {
@@ -104,9 +104,9 @@ void TaskScheduler::start ()
     }
 }
 
-void TaskScheduler::stop ()
+void TaskScheduler::Stop ()
 {
-    if (!running.load ())
+    if (!IsRunning ())
     {
         return; // Not running
     }

@@ -6,15 +6,15 @@
 #define TASK_H
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <functional>
+#include <iostream>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <queue>
 #include <thread>
-#include <condition_variable>
-#include <optional>
 #include <vector>
-#include <mutex>
-#include <iostream>
 
 using Action = std::function<void ()>;
 using TaskID = std::size_t;
@@ -48,7 +48,7 @@ private:
         }
     };
 
-    void WorkerLoop();
+    void WorkerLoop ();
     void ExecuteTask (const std::shared_ptr<Task> &task);
 
     std::priority_queue<std::shared_ptr<Task>, std::vector<std::shared_ptr<Task>>, TaskComparator> task_queue;
@@ -60,9 +60,7 @@ private:
 
 public:
     TaskScheduler () = default;
-    ~TaskScheduler () {
-        stop ();
-    }
+    ~TaskScheduler () { Stop (); }
 
     // Non-copyable and non-movable
     TaskScheduler (const TaskScheduler &) = delete;
@@ -75,9 +73,9 @@ public:
     // Add recurring task (executes repeatedly at interval)
     TaskID AddTask (std::function<void ()> action_, Duration delay, Duration interval);
 
-    void start ();
-    void stop ();
-    bool isRunning () const { return running.load (); }
+    void Start ();
+    void Stop ();
+    bool IsRunning () const { return running.load (); }
     size_t GetTaskCount ();
 };
 
