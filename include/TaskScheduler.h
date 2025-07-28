@@ -7,6 +7,7 @@
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <format>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -15,6 +16,8 @@
 #include <queue>
 #include <thread>
 #include <vector>
+
+#include "Logger.h"
 
 using Action = std::function<void ()>;
 using TaskID = std::size_t;
@@ -37,6 +40,8 @@ private:
             id (id_), action (std::move (action_)), next_execution (next_execution_), interval (interval_),
             is_recurring (interval_.has_value ())
         {
+            auto delay = std::chrono::duration_cast<std::chrono::milliseconds> (next_execution - Clock::now ());
+            Logger::Log (Logger::Level::INFO, "Task {} created, executing in {} ms", id, delay.count ());
         }
     };
 
@@ -68,7 +73,7 @@ public:
     TaskScheduler &operator= (const TaskScheduler &) = delete;
 
     // Add delayed task (executes once after delay)
-    TaskID AddTask (std::function<void ()> action, Duration delay);
+    TaskID AddTask (std::function<void ()> action, Duration delay = Duration::zero ());
 
     // Add recurring task (executes repeatedly at interval)
     TaskID AddTask (std::function<void ()> action_, Duration delay, Duration interval);
