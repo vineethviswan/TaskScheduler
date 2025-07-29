@@ -1,0 +1,21 @@
+Checks: >
+  -*,
+  clang-analyzer-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  misc-unused-parameters
+
+CheckOptions:
+  - key:             modernize-use-nullptr.NullMacros
+    value:           'NULL'
+  - key:             readability-magic-numbers.IgnoredValues
+    value:           '0,1,2'
+  - key:             readability-identifier-naming.NamespaceCase
+    value:           CamelCase
+  - key:             performance-unnecessary-value-param.AllowedTypes
+    value:           'std::string;std::vector'
+  - key:             modernize-use-override.IgnoreDestructors
+    value:           'true'
