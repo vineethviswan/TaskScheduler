@@ -1,5 +1,4 @@
-Checks: >
-  -*,
+Checks: >  
   clang-analyzer-*,
   modernize-*,
   performance-*,
@@ -7,7 +6,8 @@ Checks: >
   bugprone-*,
   cppcoreguidelines-*,
   misc-unused-parameters
-
+WarningsAsErrors: ''
+FormatStyle: file
 CheckOptions:
   - key:             modernize-use-nullptr.NullMacros
     value:           'NULL'

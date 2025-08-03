@@ -7,7 +7,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Set clang-tidy
-set(CMAKE_CXX_CLANG_TIDY "clang-tidy;-format-style=file;-checks=*")
+# set(CMAKE_CXX_CLANG_TIDY 
+#     "clang-tidy;
+#     -header-filter=${CMAKE_SOURCE_DIR}/.*;
+#     -format-style=file;
+#     -checks=*")
 
 # Set clang-format
 find_program(CLANG_FORMAT "clang-format")
