@@ -16,6 +16,14 @@ void TaskScheduler::WorkerLoop ()
     while (running.load ())
     {
         std::unique_lock<std::mutex> lock (queue_mutex);
+
+        // Check for shutdown condition
+        if (stopping.load () && task_queue.empty () && active_tasks.load () == 0)
+        {
+            Logger::Log (Logger::Level::INFO, "Shutdown condition met, exiting worker loop.");
+            break;
+        }
+
         if (task_queue.empty ())
         {
             Logger::Log (Logger::Level::DEBUG, "Queue empty, waiting for tasks");
@@ -23,36 +31,64 @@ void TaskScheduler::WorkerLoop ()
             continue;
         }
 
-        auto task = task_queue.top ();
-        auto now = Clock::now ();
-
-        // Check if task is ready to execute
-        if (task->next_execution > now)
+        // Process the next task
+        if (!task_queue.empty ())
         {
-            auto delay = std::chrono::duration_cast<std::chrono::milliseconds> (task->next_execution - now);
-            Logger::Log (Logger::Level::DEBUG, "Task {} scheduled in {} ms", task->id, delay.count ());
-            cv.wait_until (lock, task->next_execution, [this] { return !running.load (); });
-            continue; // Spurious wakeup or stop requested
-        }
+            auto task = task_queue.top ();
+            auto now = Clock::now ();
 
-        task_queue.pop (); // Remove task from queue
-        lock.unlock (); // Unlock before executing task
+            if (!stopping.load ())
+            {
 
-        if (task->is_recurring)
-        {
-            // calculate next execution time
-            task->next_execution += task->interval.value ();
-            Logger::Log (Logger::Level::DEBUG, "Rescheduling recurring task {} for next execution", task->id);
-            task_queue.push (task);
+                active_tasks.fetch_add (1);
+
+                // Check if task is ready to execute
+                if (task->next_execution > now)
+                {
+                    auto delay = std::chrono::duration_cast<std::chrono::milliseconds> (task->next_execution - now);
+                    Logger::Log (Logger::Level::DEBUG, "Task {} scheduled in {} ms", task->id, delay.count ());
+                    cv.wait_until (lock, task->next_execution, [this] { return !running.load (); });
+                    continue; // Spurious wakeup or stop requested
+                }
+
+                task_queue.pop (); // Remove task from queue
+                lock.unlock (); // Unlock before executing task
+
+                if (task->is_recurring)
+                {
+                    // calculate next execution time
+                    task->next_execution += task->interval.value ();
+                    Logger::Log (Logger::Level::DEBUG, "Rescheduling recurring task {} for next execution", task->id);
+                    task_queue.push (task);
+                }
+                Logger::Log (Logger::Level::INFO, "Executing task {}", task->id);
+                ExecuteTask (task);
+
+                active_tasks.fetch_sub (1);
+
+                if (stopping.load () && active_tasks.load () == 0)
+                    shutdown_cv.notify_one ();
+            }
         }
-        Logger::Log (Logger::Level::INFO, "Executing task {}", task->id);
-        ExecuteTask (task);
     }
     Logger::Log (Logger::Level::INFO, "Worker thread stopped");
 }
 
 void TaskScheduler::ExecuteTask (const std::shared_ptr<Task> &task)
 {
+    struct TaskGuard
+    {
+        TaskScheduler *scheduler;
+        ~TaskGuard ()
+        {
+            scheduler->active_tasks.fetch_sub (1);
+            if (scheduler->stopping.load () && scheduler->active_tasks.load () == 0)
+            {
+                scheduler->shutdown_cv.notify_one ();
+            }
+        }
+    } guard {this};
+
     try
     {
         task->action ();
@@ -70,6 +106,12 @@ void TaskScheduler::ExecuteTask (const std::shared_ptr<Task> &task)
 
 TaskID TaskScheduler::AddTask (std::function<void ()> action_, Duration delay)
 {
+    if (stopping)
+    {
+        Logger::Log (Logger::Level::WARNING, "Rejecting new task - scheduler is shutting down");
+        return 0; // Or throw an exception
+    }
+
     const TaskID taskID = next_task_id++;
     auto execution_time = Clock::now () + delay;
 
@@ -86,6 +128,12 @@ TaskID TaskScheduler::AddTask (std::function<void ()> action_, Duration delay)
 
 TaskID TaskScheduler::AddTask (std::function<void ()> action_, Duration delay, Duration interval)
 {
+    if (stopping)
+    {
+        Logger::Log (Logger::Level::WARNING, "Rejecting new task - scheduler is shutting down");
+        return 0; // Or throw an exception
+    }
+
     const TaskID taskID = next_task_id++;
     auto execution_time = Clock::now () + delay;
 
@@ -123,18 +171,40 @@ void TaskScheduler::Start ()
     }
 }
 
-void TaskScheduler::Stop ()
+void TaskScheduler::Stop (ShutdownMode mode)
 {
+    Logger::Log (Logger::Level::INFO, "Initiating {} shutdown...",
+            mode == ShutdownMode::IMMEDIATE ? "immediate" : "graceful");
+
     if (!IsRunning ())
     {
         Logger::Log (Logger::Level::WARNING, "Attempted to stop a non-running scheduler");
         return; // Not running
     }
 
-    Logger::Log (Logger::Level::INFO, "Stopping task scheduler");
+    stopping = true;
+    cv.notify_all (); // Wake up worker thread
+
+    if (mode != ShutdownMode::IMMEDIATE)
+    {
+        std::unique_lock<std::mutex> lock (queue_mutex);
+        bool completed = shutdown_cv.wait_for (lock, DEFAULT_SHUTDOWN_TIMEOUT, [this, mode] ()
+                { return active_tasks == 0 && (mode == ShutdownMode::COMPLETE_CURRENT || task_queue.empty ()); });        
+
+        if (!completed)
+        {
+            Logger::Log (Logger::Level::WARNING, "Shutdown timed out after {} ms. Tasks remaining: {}, Active: {}",
+                    DEFAULT_SHUTDOWN_TIMEOUT, task_queue.size (), active_tasks.load ());
+        }
+        else
+        {
+            Logger::Log (Logger::Level::INFO, "All tasks completed successfully");
+        }
+    }
+
+    std::atomic_thread_fence (std::memory_order_acquire);
     running.store (false);
 
-    cv.notify_all (); // Wake up worker thread if waiting
     if (worker_thread.joinable ())
     {
         worker_thread.join (); // Wait for worker thread to finish

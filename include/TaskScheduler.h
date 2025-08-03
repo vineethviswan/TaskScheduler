@@ -28,6 +28,8 @@ using TimePoint = Clock::time_point;
 class TaskScheduler
 {
 private:
+    static constexpr auto DEFAULT_SHUTDOWN_TIMEOUT = std::chrono::seconds {15};
+
     struct Task
     {
         TaskID id;
@@ -63,9 +65,24 @@ private:
     std::condition_variable cv;
     std::thread worker_thread;
 
+    std::atomic<bool> stopping {false}; // Signal for graceful shutdown
+    std::atomic<size_t> active_tasks {0}; // Count of currently executing tasks
+    std::condition_variable shutdown_cv; // Condition variable for shutdown synchronization
+
 public:
     TaskScheduler () = default;
-    ~TaskScheduler () { Stop (); }
+    ~TaskScheduler ()
+    {
+        if (active_tasks)
+            Stop ();
+    }
+
+    enum class ShutdownMode
+    {
+        IMMEDIATE, // Stop all tasks immediately
+        DRAIN_QUEUE, // Wait for all tasks in the queue to finish
+        COMPLETE_CURRENT // Wait for currently executing tasks to finish
+    };
 
     // Non-copyable and non-movable
     TaskScheduler (const TaskScheduler &) = delete;
@@ -79,7 +96,7 @@ public:
     TaskID AddTask (std::function<void ()> action_, Duration delay, Duration interval);
 
     void Start ();
-    void Stop ();
+    void Stop (ShutdownMode mode = ShutdownMode::DRAIN_QUEUE);
     bool IsRunning () const { return running.load (); }
     size_t GetTaskCount ();
 };

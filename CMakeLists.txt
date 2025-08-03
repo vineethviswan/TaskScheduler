@@ -26,6 +26,16 @@ if(CLANG_FORMAT)
     )
 endif()
 
+# Enable debug symbols
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+
+# For MSVC specific debug info
+if(MSVC)
+    set(CMAKE_CXX_FLAGS_DEBUG "/Zi /Od /EHsc")
+    set(CMAKE_EXE_LINKER_FLAGS_DEBUG "/DEBUG")
+endif()
+
 # Add source files
 file(GLOB_RECURSE SOURCES ${CMAKE_SOURCE_DIR}/src/*.cpp)
 
