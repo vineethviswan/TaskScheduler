@@ -12,7 +12,7 @@ size_t TaskScheduler::GetTaskCount ()
 
 void TaskScheduler::WorkerLoop ()
 {
-    Logger::Log (Logger::Level::INFO, "Worker thread started.");
+    Logger::Log (Logger::Level::INFO, "Worker thread started : id {}", std::this_thread::get_id ());
     while (running.load ())
     {
         std::unique_lock<std::mutex> lock (queue_mutex);
@@ -61,13 +61,16 @@ void TaskScheduler::WorkerLoop ()
                     Logger::Log (Logger::Level::DEBUG, "Rescheduling recurring task {} for next execution", task->id);
                     task_queue.push (task);
                 }
+
                 Logger::Log (Logger::Level::INFO, "Executing task {}", task->id);
                 ExecuteTask (task);
 
-                active_tasks.fetch_sub (1);
-
-                if (stopping.load () && active_tasks.load () == 0)
-                    shutdown_cv.notify_one ();
+                // Synchronize decrement and notification
+                {
+                    active_tasks.fetch_sub (1);
+                    if (stopping.load () && active_tasks.load () == 0)
+                        shutdown_cv.notify_one ();
+                }
             }
         }
     }
@@ -76,19 +79,6 @@ void TaskScheduler::WorkerLoop ()
 
 void TaskScheduler::ExecuteTask (const std::shared_ptr<Task> &task)
 {
-    struct TaskGuard
-    {
-        TaskScheduler *scheduler;
-        ~TaskGuard ()
-        {
-            scheduler->active_tasks.fetch_sub (1);
-            if (scheduler->stopping.load () && scheduler->active_tasks.load () == 0)
-            {
-                scheduler->shutdown_cv.notify_one ();
-            }
-        }
-    } guard {this};
-
     try
     {
         task->action ();
@@ -189,10 +179,10 @@ void TaskScheduler::Stop (ShutdownMode mode)
     {
         std::unique_lock<std::mutex> lock (queue_mutex);
         bool completed = shutdown_cv.wait_for (lock, DEFAULT_SHUTDOWN_TIMEOUT, [this, mode] ()
-                { return active_tasks == 0 && (mode == ShutdownMode::COMPLETE_CURRENT || task_queue.empty ()); });        
+                { return active_tasks == 0 && (mode == ShutdownMode::COMPLETE_CURRENT || task_queue.empty ()); });
 
         if (!completed)
-        {
+        {            
             Logger::Log (Logger::Level::WARNING, "Shutdown timed out after {} ms. Tasks remaining: {}, Active: {}",
                     DEFAULT_SHUTDOWN_TIMEOUT, task_queue.size (), active_tasks.load ());
         }

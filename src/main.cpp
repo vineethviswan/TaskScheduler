@@ -13,6 +13,8 @@ int main ()
     scheduler.AddTask ([] { std::cout << "Recurring task 3 executed every 2 seconds.\n"; }, std::chrono::seconds (2),
             std::chrono::seconds (2));
 
+    scheduler.AddTask([] { std::cout << "One-time task 4 executed immediately.\n"; });
+
     scheduler.Start ();
 
     // Keep main thread alive

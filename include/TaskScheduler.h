@@ -73,7 +73,7 @@ public:
     TaskScheduler () = default;
     ~TaskScheduler ()
     {
-        if (active_tasks)
+        if (active_tasks.load () == 0)
             Stop ();
     }
 

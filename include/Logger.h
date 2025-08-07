@@ -22,7 +22,11 @@ public:
         std::lock_guard<std::mutex> lock (log_mutex);
         auto now = std::chrono::system_clock::now ();
         auto timestamp = std::format ("{:%Y-%m-%d %H:%M:%S}", now);
-        std::cout << std::format ("[{}] {}: {}\n", timestamp, GetLevelString (level), message);
+        std::cout << std::format ("{}[{}] {}: {}{}\n",
+                GetLevelColor (level), // Start color
+                timestamp, GetLevelString (level), message,
+                "\033[0m" // Reset color at the end
+        );
     }
 
     template<typename... Args>
@@ -46,6 +50,23 @@ private:
                 return "ERROR";
             default:
                 return "UNKNOWN";
+        }
+    }
+
+    static std::string_view GetLevelColor (Level level)
+    {
+        switch (level)
+        {
+            case Level::DEBUG:
+                return "\033[35m"; // Magenta
+            case Level::INFO:
+                return "\033[32m"; // Green
+            case Level::WARNING:
+                return "\033[33m"; // Yellow
+            case Level::ERROR:
+                return "\033[31m"; // Red
+            default:
+                return "\033[0m"; // Reset
         }
     }
 
