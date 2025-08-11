@@ -3,6 +3,7 @@
 //
 
 #include "TaskScheduler.h"
+#include <sstream>
 
 size_t TaskScheduler::GetTaskCount ()
 {
@@ -12,7 +13,10 @@ size_t TaskScheduler::GetTaskCount ()
 
 void TaskScheduler::WorkerLoop ()
 {
-    Logger::Log (Logger::Level::INFO, "Worker thread started : id {}", std::this_thread::get_id ());
+    std::stringstream ss;
+    ss << (std::this_thread::get_id ());
+    Logger::Log (Logger::Level::INFO, "Worker thread started with ID: {}", ss.str ());
+
     while (running.load ())
     {
         std::unique_lock<std::mutex> lock (queue_mutex);
@@ -182,7 +186,7 @@ void TaskScheduler::Stop (ShutdownMode mode)
                 { return active_tasks == 0 && (mode == ShutdownMode::COMPLETE_CURRENT || task_queue.empty ()); });
 
         if (!completed)
-        {            
+        {
             Logger::Log (Logger::Level::WARNING, "Shutdown timed out after {} ms. Tasks remaining: {}, Active: {}",
                     DEFAULT_SHUTDOWN_TIMEOUT, task_queue.size (), active_tasks.load ());
         }
