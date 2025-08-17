@@ -60,7 +60,7 @@ private:
 
     std::priority_queue<std::shared_ptr<Task>, std::vector<std::shared_ptr<Task>>, TaskComparator> task_queue;
     std::atomic<bool> running {false};
-    std::atomic<TaskID> next_task_id {0};
+    std::atomic<TaskID> next_task_id {1};
     std::mutex queue_mutex;
     std::condition_variable cv;
     std::thread worker_thread;

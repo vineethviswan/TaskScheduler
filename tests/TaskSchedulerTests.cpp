@@ -22,17 +22,7 @@ protected:
         scheduler.reset ();
     }
 
-    std::unique_ptr<TaskScheduler> scheduler;
-
-    // Helper function to wait for tasks to complete
-    void WaitForTasksToComplete (int expected_count, std::chrono::milliseconds timeout = 1000ms)
-    {
-        auto start = std::chrono::steady_clock::now ();
-        while (scheduler->GetTaskCount () > 0 && std::chrono::steady_clock::now () - start < timeout)
-        {
-            std::this_thread::sleep_for (10ms);
-        }
-    }
+    std::unique_ptr<TaskScheduler> scheduler;    
 };
 
 // Test fixture for running scheduler tests
@@ -66,7 +56,7 @@ TEST_F (TaskSchedulerTest, StartSchedulerChangesRunningState)
     scheduler->Stop ();
     EXPECT_FALSE (scheduler->IsRunning ());
 }
-/*
+
 TEST_F (TaskSchedulerTest, StartAlreadyRunningSchedulerDoesNothing)
 {
     scheduler->Start ();
@@ -139,18 +129,19 @@ TEST_F (RunningTaskSchedulerTest, ImmediateTaskExecutesQuickly)
 
 TEST_F (RunningTaskSchedulerTest, DelayedTaskExecutesAfterDelay)
 {
-    std::atomic<bool> executed {false};
-    auto start = std::chrono::steady_clock::now ();
-
-    scheduler->AddTask ([&executed, start] () { executed = true; }, 100ms);
-
+    std::atomic<bool> executed{false};
+    
+    scheduler->AddTask([&executed]() { 
+        executed = true;
+    }, 100ms);
+    
     // Check it hasn't executed immediately
-    std::this_thread::sleep_for (50ms);
-    EXPECT_FALSE (executed);
-
+    std::this_thread::sleep_for(50ms);
+    EXPECT_FALSE(executed);
+    
     // Wait for execution
-    std::this_thread::sleep_for (100ms);
-    EXPECT_TRUE (executed);
+    std::this_thread::sleep_for(100ms);
+    EXPECT_TRUE(executed);
 }
 
 TEST_F (RunningTaskSchedulerTest, MultipleTasksExecuteInOrder)
@@ -189,7 +180,7 @@ TEST_F (RunningTaskSchedulerTest, MultipleTasksExecuteInOrder)
     ASSERT_EQ (execution_order.size (), 3);
     EXPECT_EQ (execution_order[0], 1);
     EXPECT_EQ (execution_order[1], 2);
-    EXPECT_EQ (execution_order[2], 2);
+    EXPECT_EQ (execution_order[2], 3);
 }
 
 // ============ Recurring Task Tests ============
@@ -421,4 +412,3 @@ TEST_F (RunningTaskSchedulerTest, GetTaskCountIsThreadSafe)
     keep_adding = false;
     adder.join ();
 }
-*/
