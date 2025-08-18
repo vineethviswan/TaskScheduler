@@ -1,21 +1,19 @@
-Checks: >  
-  clang-analyzer-*,
-  modernize-*,
-  performance-*,
-  readability-*,
-  bugprone-*,
-  cppcoreguidelines-*,
-  misc-unused-parameters
+# Recommended checks 
+Checks: 'clang-analyzer-*,bugprone-*,cppcoreguidelines-*,modernize-*,readability-*'
+
+# Add some other common configuration options
 WarningsAsErrors: ''
-FormatStyle: file
+
+# This option tells clang-tidy to only show warnings from files in our source directory.
+# This will ignore warnings from third-party libraries like googletest.
+HeaderFilter: '.*(Logger|CMakeLists|TaskScheduler).cpp'
+
+# This setting tells clang-tidy what C++ standard to use.
+Language: 'C++17'
+
+# You can also use specific options for certain checks.
 CheckOptions:
-  - key:             modernize-use-nullptr.NullMacros
-    value:           'NULL'
-  - key:             readability-magic-numbers.IgnoredValues
-    value:           '0,1,2'
-  - key:             readability-identifier-naming.NamespaceCase
-    value:           CamelCase
-  - key:             performance-unnecessary-value-param.AllowedTypes
-    value:           'std::string;std::vector'
-  - key:             modernize-use-override.IgnoreDestructors
-    value:           'true'
+   - key: readability-identifier-naming.NamespaceCase
+     value: lower_case
+   - key: readability-identifier-naming.VariableCase
+     value: camelCase

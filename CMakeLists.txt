@@ -89,8 +89,7 @@ if(CLANG_FORMAT)
 endif()
 
 # Set clang-tidy
-# set(CMAKE_CXX_CLANG_TIDY 
-#     "clang-tidy;
-#     -header-filter=${CMAKE_SOURCE_DIR}/.*;
-#     -format-style=file;
-#     -checks=*")
+set(CMAKE_CXX_CLANG_TIDY "clang-tidy;
+    -header-filter=${CMAKE_SOURCE_DIR}/.*;
+    -format-style=file;
+    -checks=*")

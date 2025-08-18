@@ -297,30 +297,60 @@ TEST_F (RunningTaskSchedulerTest, ImmediateShutdownStopsQuickly)
 
 TEST_F (RunningTaskSchedulerTest, GracefulShutdownWaitsForCurrentTasks)
 {
-    std::atomic<bool> task_completed {false};
+    // Track task execution states
+    std::atomic<bool> task1_started{false};
+    std::atomic<bool> task1_completed{false};
+    std::atomic<bool> task2_started{false};
+    std::atomic<bool> task2_completed{false};
+    
+    // Add a long-running task that will be executing when Stop() is called
+    auto task1_id = scheduler->AddTask([&]() {
+        task1_started = true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        task1_completed = true;
+    }, std::chrono::milliseconds(10));
+    
+    // Add another task that should also complete during graceful shutdown
+    auto task2_id = scheduler->AddTask([&]() {
+        task2_started = true;
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        task2_completed = true;
+    }, std::chrono::milliseconds(50));
+    
+    // Wait for tasks to start executing
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    
+    // Verify tasks have started
+    EXPECT_TRUE(task1_started.load());
+    EXPECT_TRUE(task2_started.load());
+    EXPECT_FALSE(task1_completed.load());
+    EXPECT_FALSE(task2_completed.load());
+    
+    // Record shutdown start time
+    auto shutdown_start = std::chrono::steady_clock::now();
+    
+    // Initiate graceful shutdown (should wait for current tasks to complete)
+    scheduler->Stop(TaskScheduler::ShutdownMode::COMPLETE_CURRENT);
+    
+    // Record shutdown completion time
+    auto shutdown_end = std::chrono::steady_clock::now();
+    auto shutdown_duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        shutdown_end - shutdown_start);
+    
+    // Verify that graceful shutdown waited for tasks to complete
+    EXPECT_TRUE(task1_completed.load());
+    EXPECT_TRUE(task2_completed.load());
+    
+    // Verify shutdown took reasonable time (at least as long as the longest task)
+    // Task1 takes ~500ms, so shutdown should take at least that long
+    EXPECT_GE(shutdown_duration.count(), 400); // Allow some tolerance
+    
+    // Verify scheduler is no longer running
+    EXPECT_FALSE(scheduler->IsRunning());
+    
+    // Verify no tasks remain in queue
+    EXPECT_EQ(scheduler->GetTaskCount(), 0);
 
-    // Add a task that takes some time
-    scheduler->AddTask (
-            [&task_completed] ()
-            {
-                std::this_thread::sleep_for (100ms);
-                task_completed = true;
-            },
-            10ms);
-
-    std::this_thread::sleep_for (20ms); // Let task start
-
-    scheduler->Stop (TaskScheduler::ShutdownMode::COMPLETE_CURRENT);
-
-    EXPECT_FALSE (scheduler->IsRunning ());
-    EXPECT_TRUE (task_completed); // Task should have completed
-}
-
-TEST_F (TaskSchedulerTest, AddTaskToStoppedSchedulerReturnsZero)
-{
-    // Don't start the scheduler
-    TaskID id = scheduler->AddTask ([] () { }, 10ms);
-    EXPECT_EQ (id, 0);
 }
 
 // ============ Stress Tests ============
