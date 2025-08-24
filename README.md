@@ -16,7 +16,7 @@ Design and implement a lightweight, modular, and extensible task scheduler in mo
 
 - Implement a `Task` abstraction using `std::function<void()>`
 - Create a thread-safe task queue
-- Develop a thread pool using `std::jthread`
+
 - Support:
   - One-shot tasks
   - Recurring tasks
@@ -26,11 +26,27 @@ Design and implement a lightweight, modular, and extensible task scheduler in mo
 
 #### ⚙️ Non-Functional Requirements
 
-- Modular code using C++ modules (if supported)
-- Unit tests with Catch2 or GoogleTest
+- Unit tests with GoogleTest
 - clang-tidy integration and CMake presets
-- Cross-platform compatibility
 
+### 📦 Deliverables
+
+- `CMakeLists.txt` with modern configuration
+- `TaskScheduler` class with:
+  - `addTask()`, `start()`, `stop()` methods
+  - Support for delayed and recurring tasks
+- Example usage in `main.cpp`
+- Unit tests in `tests/`
+- Documentation (`README.md`)
+
+### 🚀 Next Steps & Stretch Goals
+
+- Task chaining (`.then()` style)
+- Develop a thread pool using `std::jthread`
+- Executors and Senders (C++23)
+- CLI or GUI timeline visualization
+- Modular code using C++ modules (if supported)
+- Cross-platform compatibility
 ---
 
 ### 🧠 Modern C++ Features to Use
@@ -45,24 +61,3 @@ Design and implement a lightweight, modular, and extensible task scheduler in mo
 | `std::expected` / `optional` | Clean error/result handling |
 | `modules`            | Fast-compiling, reusable code units |
 
----
-
-### 📦 Deliverables
-
-- `CMakeLists.txt` with modern configuration
-- `TaskScheduler` class with:
-  - `addTask()`, `start()`, `stop()` methods
-  - Support for delayed and recurring tasks
-- Example usage in `main.cpp`
-- Unit tests in `tests/`
-- Documentation (`README.md`)
-
----
-
-### 🚀 Stretch Goals
-
-- Task chaining (`.then()` style)
-- Executors and Senders (C++23)
-- CLI or GUI timeline visualization
-
----
